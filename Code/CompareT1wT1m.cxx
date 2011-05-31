@@ -69,16 +69,16 @@ Image3DType::Pointer ReadDICOM( std::string dir )
 
   // get series IDs, use the first encountered
   const std::vector<std::string>& seriesUID = nameGenerator->GetSeriesUIDs();
-  if( seriesUID.size() == 0)
-    {
-    cerr << "Error: no DICOM series found in " << dir.c_str() << endl;
-    }
+  // if( seriesUID.size() == 0)
+  //   {
+  //   cerr << "Error: no DICOM series found in " << dir.c_str() << endl;
+  //   }
   std::vector<std::string>::const_iterator seriesItr=seriesUID.begin();
-  if( seriesUID.size() != 1)
-    {
-    clog << "Warning: multiple series found, using the first (UID "
-	 << seriesItr->c_str() << ")" << endl;
-    }
+  // if( seriesUID.size() != 1)
+  //   {
+  //   clog << "Warning: multiple series found, using the first (UID "
+  // 	 << seriesItr->c_str() << ")" << endl;
+  //   }
 
   std::vector<std::string> fileNames;
 
@@ -110,8 +110,6 @@ Image2DType::Pointer ExtractSliceFromVolume( Image3DType::Pointer image, unsigne
   const unsigned int sliceNumber = size[axis] >> 1;
   size[axis] = 0;
   start[axis] = sliceNumber;
-
-  cout << "Slice Number " << sliceNumber << endl;
 
   Image3DType::RegionType desiredRegion;
   desiredRegion.SetSize( size );
@@ -145,16 +143,10 @@ ImageRenderType::Pointer RenderImage( Image2DType::Pointer image )
   return wlfilter->GetOutput();
 }
 
-int main(int argc, char** argv)
+void LoadExtractWrite( std::string indir, std::string outfile )
 {
-  // command line args
-  vul_arg<std::string> dirT1w(0, "T1w Input DICOM DIR");
-  vul_arg<std::string> dirT1m(0, "T1m Input DICOM DIR");
-  vul_arg<std::string> outfile(0, "Output File");
-  vul_arg_parse(argc, argv);
 
-  cout << "---Reading T1w DICOM---" << endl;
-  Image3DType::Pointer dcmT1w = ReadDICOM( dirT1w() );
+  Image3DType::Pointer dcmT1w = ReadDICOM( indir );
 
   Image2DType::Pointer slice = ExtractSliceFromVolume( dcmT1w, 1 );
 
@@ -163,8 +155,25 @@ int main(int argc, char** argv)
   typedef itk::ImageFileWriter< ImageRenderType > WriterType;
   WriterType::Pointer writer = WriterType::New();
   writer->SetInput( renderedImage );
-  writer->SetFileName( outfile() );
+  writer->SetFileName( outfile );
   writer->Update();
+}
+
+int main(int argc, char** argv)
+{
+  // command line args
+  vul_arg<std::string> dirT1w(0, "T1w Input DICOM DIR");
+  vul_arg<std::string> dirT1m(0, "T1m Input DICOM DIR");
+  vul_arg<std::string> outfilebase(0, "Output File Base");
+  vul_arg_parse(argc, argv);
+
+  std::string outfileT1w = outfilebase() + "_T1w.png";
+
+  std::string outfileT1m = outfilebase() + "_T1m.png";
+
+  LoadExtractWrite( dirT1w(), outfileT1w );
+
+  LoadExtractWrite( dirT1m(), outfileT1m );
 
   return EXIT_SUCCESS;
 }
